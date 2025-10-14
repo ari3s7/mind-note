@@ -4,6 +4,8 @@ const app = express();
 
 const PORT = 3000;
 
+app.use(express.json());
+
 
 const signUp = z.object ({
     username: z.string().min(3).max(10),
@@ -12,9 +14,14 @@ const signUp = z.object ({
 
 app.post("/api/v1/signup", (req,res) => {
     
-    const email = req.body.email;
-    const password = req.body.password;
+    try {
+   const validateData = signUp.parse(req.body);
 
+   res.status(200).json({message: "user succesfully signed up"})
+   }
+    catch (err) {
+        
+    }
 
 })
 
