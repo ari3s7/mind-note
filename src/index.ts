@@ -116,6 +116,10 @@ app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
     contentId,
     userId: req.userId
   })
+
+  res.json ({
+    message: "Deleted"
+  })
    
 })
 
