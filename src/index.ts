@@ -4,7 +4,8 @@ import jwt from "jsonwebtoken";
 import { ContentModel, UserModel } from './db.js';
 import  bcrypt  from "bcryptjs";
 import dotenv from "dotenv";
-import { userMiddleware } from './middleware.js';
+import { userMiddleware, } from './middleware.js';
+import type { AuthRequest } from "./middleware.js";
 dotenv.config();
 
 const app = express();
@@ -78,7 +79,7 @@ app.post("/api/v1/signin", async (req, res) => {
   }
 });
 
-app.post("/api/v1/content", userMiddleware, async (req, res) => {
+app.post("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
    const link = req.body.link;
    const type = req.body.type;
    const title = req.body.title;
@@ -86,7 +87,6 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
     link,
     type,
     title,
-    //@ts-ignore
     userId: req.userId, 
     tags: [],
    })
@@ -96,8 +96,8 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
    })
 })
 
-app.get("/api/v1/content", userMiddleware, async (req,res) => {
-  // @ts-ignore
+app.get("/api/v1/content", userMiddleware, async (req: AuthRequest,res) => {
+  
   const userId = req.userId;
   const content = await ContentModel.find({
     userId: userId
@@ -109,7 +109,13 @@ app.get("/api/v1/content", userMiddleware, async (req,res) => {
 
 })
 
-app.delete("/api/v1/content", (req, res) => {
+app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
+  const contentId = req.body.contentId;
+
+  await ContentModel.deleteMany({
+    contentId,
+    userId: req.userId
+  })
    
 })
 
