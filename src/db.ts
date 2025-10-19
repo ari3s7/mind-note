@@ -1,17 +1,8 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
 const Schema  = mongoose.Schema;
 const ObjectId = mongoose.Schema.Types.ObjectId;
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load .env from root
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
+import dotenv from "dotenv";
+dotenv.config();
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) throw new Error('MONGO_URI not found in .env');
 
