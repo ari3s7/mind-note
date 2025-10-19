@@ -3,12 +3,16 @@ import z from 'zod';
 import jwt from "jsonwebtoken";
 import { UserModel } from './db.js';
 import  bcrypt  from "bcryptjs";
+import dotenv from "dotenv";
+dotenv.config();
+
 const app = express();
 
 const PORT = 3000;
 
 app.use(express.json());
 
+const JWT_SECRET = process.env.JWT_SECRET;
 
 
 app.post("/api/v1/signup", async (req,res) => {
@@ -26,22 +30,53 @@ app.post("/api/v1/signup", async (req,res) => {
         res.status(403).json({
             message: "not correct format"
         })
-    }
+        return
+    } 
         const username = req.body.username;
         const password = req.body.password;
 
         const hashedPassword = await bcrypt.hash(password, 5);
-
-        const user = await UserModel.create({
+      try{
+        await UserModel.create({
         username: username,
         password: hashedPassword,
-})
+     })
+        res.status(200).json({
+        message: "successfully created the user"
+    })
+    }
+    catch (err) {
+      console.error("error creating user", err);
+
+      res.status(500).json ({
+        message: "something went wrong"
+      })
+    }
 })
 
-app.post("/api/v1/signin", (req, res) => {
+app.post("/api/v1/signin", async (req, res) => {
+  const { username, password } = req.body;
 
-})
+  try {
+    const existingUser = await UserModel.findOne({ username });
+    if (!existingUser) {
+      return res.status(403).json({ message: "Incorrect credentials" });
+    }
 
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if (!isMatch) {
+      return res.status(403).json({ message: "Incorrect credentials" });
+    }
+
+    // Generate JWT
+    const token = jwt.sign({ id: existingUser._id }, JWT_SECRET!);
+
+    res.json({ token });
+  } catch (err) {
+    console.error("Signin error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 app.post("/api/v1/content", (req, res) => {
 
