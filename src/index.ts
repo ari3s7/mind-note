@@ -125,7 +125,7 @@ app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
    
 })
 
-app.post("api/v1/brain/share", userMiddleware, async (req: AuthRequest, res) => {
+app.post("/api/v1/brain/share", userMiddleware, async (req: AuthRequest, res) => {
    const { contentId } = req.body;
 
    const content = await ContentModel.findOne({
@@ -152,12 +152,25 @@ app.post("api/v1/brain/share", userMiddleware, async (req: AuthRequest, res) => 
     });
    }
 
-   const shareURL = `${process.env.FRONTEND_URL}/api/v1/brain${link.hash}`
+   const shareURL = `${process.env.FRONTEND_URL}/api/v1/brain/${link.hash}`
    res.json({shareURL})
 })
 
-app.get("./api/v1/brain/:shareLink", (req, res) => {
-    
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+    const { shareLink } = req.params;
+
+    const link = await LinkModel.findOne({
+      hash: shareLink,
+    }).populate("contentId")
+    .populate("userId", "username");
+
+     if (!link) {
+    return res.status(404).json({ message: "Shared content not found" });
+  }
+
+  res.json({
+    content: link.contentId,
+  });
 })
 
 app.listen(PORT);
