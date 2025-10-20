@@ -1,11 +1,13 @@
 import express from 'express';
 import z from 'zod';
 import jwt from "jsonwebtoken";
-import { ContentModel, UserModel } from './db.js';
+import { ContentModel, LinkModel, UserModel } from './db.js';
 import  bcrypt  from "bcryptjs";
 import dotenv from "dotenv";
 import { userMiddleware, } from './middleware.js';
 import type { AuthRequest } from "./middleware.js";
+import { nanoid } from "nanoid";
+
 dotenv.config();
 
 const app = express();
@@ -123,8 +125,35 @@ app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
    
 })
 
-app.post("api/v1/brain/share", (req, res) => {
+app.post("api/v1/brain/share", userMiddleware, async (req: AuthRequest, res) => {
+   const { contentId } = req.body;
 
+   const content = await ContentModel.findOne({
+    _id: contentId,
+    userId: req.userId 
+   })
+
+   if (!content) {
+    res.status(404).json({
+      message: "Content not found"
+    });
+   }
+   let link = await LinkModel.findOne ({
+    contentId,
+    userId: req.userId
+   });
+
+   if(!link) {
+    const hash = nanoid(10);
+    link = await LinkModel.create ({
+      hash,
+      userId: req.userId,
+      contentId,
+    });
+   }
+
+   const shareURL = `${process.env.FRONTEND_URL}/api/v1/brain${link.hash}`
+   res.json({shareURL})
 })
 
 app.get("./api/v1/brain/:shareLink", (req, res) => {
