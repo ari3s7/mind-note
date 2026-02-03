@@ -2,24 +2,35 @@ import express from 'express';
 import z from 'zod';
 import jwt from "jsonwebtoken";
 import { ContentModel, LinkModel, UserModel } from './db.js';
+import { connectDB } from "./db.js";
 import  bcrypt  from "bcryptjs";
 import dotenv from "dotenv";
 import { userMiddleware, } from './middleware.js';
 import type { AuthRequest } from "./middleware.js";
 import { nanoid } from "nanoid";
+import { authRateLimiter, apiRateLimiter } from "./rateLimiter.js";
+import cors from "cors";
 
 dotenv.config();
 
-const app = express();
+await connectDB();
 
-const PORT = 3000;
+const app = express();
+app.use(cors());
+
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET not defined");
+}
 
-app.post("/api/v1/signup", async (req,res) => {
+
+
+app.post("/api/v1/signup",authRateLimiter, async (req,res) => {
 
 
      const signUp = z.object ({
@@ -58,7 +69,7 @@ app.post("/api/v1/signup", async (req,res) => {
     }
 })
 
-app.post("/api/v1/signin", async (req, res) => {
+app.post("/api/v1/signin", authRateLimiter, async (req, res) => {
   const { username, password } = req.body;
 
   try {
@@ -115,7 +126,7 @@ app.delete("/api/v1/content", userMiddleware, async (req: AuthRequest, res) => {
   const contentId = req.body.contentId;
 
   await ContentModel.deleteMany({
-    contentId,
+    _id: contentId,
     userId: req.userId
   })
 
@@ -173,4 +184,11 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
   });
 })
 
-app.listen(PORT);
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
